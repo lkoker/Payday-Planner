@@ -245,7 +245,7 @@ input,select,textarea{font:inherit;color:var(--ink);background:var(--sunk);borde
         <select id="bill-freq"><option value="monthly">Monthly</option><option value="biweekly">Every 2 weeks</option><option value="once">One time</option></select></div>
     </div>
     <div class="field"><label for="bill-acct">Paid from</label>
-      <select id="bill-acct"><option>Checking</option><option>Sapphire</option><option>Prime card</option><option>Other card</option></select>
+      <select id="bill-acct"></select>
       <span class="hint">Card charges count toward checking too, since you pay cards off right away. You can change that in Settings.</span></div>
     <div class="field" id="day-field"><label for="bill-day">Due day of month</label><input id="bill-day" type="number" inputmode="numeric" min="1" max="31" value="1"><span class="hint">29–31 fall on the last day in shorter months.</span></div>
     <div class="field" id="date-field" hidden><label for="bill-date" id="bill-date-label">Date</label><input id="bill-date" type="date"></div>
@@ -269,6 +269,22 @@ input,select,textarea{font:inherit;color:var(--ink);background:var(--sunk);borde
     <div class="field"><label for="set-cushion">Minimum balance to keep in checking</label><input id="set-cushion" type="number" inputmode="decimal" min="0" step="1"></div>
     <label for="set-cards" style="display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer"><input type="checkbox" class="check" id="set-cards" style="flex:none;margin-top:1px"><span><b>I pay my cards off right away</b><br><span class="sub">Count card charges toward what I keep in checking.</span></span></label>
     <div class="actions"><button class="btn" type="submit">Save</button><button class="btn ghost" type="button" id="set-cancel">Cancel</button></div>
+    <div class="perf" style="margin:4px 0"></div>
+    <div class="field">
+      <span class="label">Accounts</span>
+      <span class="hint">Where bills get paid from. Bank account bills always come out of checking; credit card bills count when "I pay my cards off right away" is on.</span>
+      <ul class="items" id="acct-list"></ul>
+      <div class="confirm" id="acct-confirm" hidden>
+        <span id="acct-confirm-text"></span>
+        <div class="actions"><button class="btn sm danger" type="button" id="acct-confirm-yes">Remove</button><button class="btn sm ghost" type="button" id="acct-confirm-no">Keep it</button></div>
+      </div>
+      <div class="two" style="grid-template-columns:1fr auto">
+        <input id="acct-name" placeholder="New account, like Visa or Savings" maxlength="30" aria-label="New account name">
+        <select id="acct-type" aria-label="Account type"><option value="card">Credit card</option><option value="bank">Bank account</option></select>
+      </div>
+      <div class="actions"><button class="btn sm ghost" type="button" id="acct-add">Add account</button></div>
+      <span class="sub" id="acct-msg" role="status"></span>
+    </div>
     <div class="perf" style="margin:4px 0"></div>
     <div class="field">
       <span class="label">Backup</span>
@@ -314,7 +330,17 @@ const now = new Date(); const TODAY = new Date(now.getFullYear(),now.getMonth(),
 
 // ---------- state ----------
 let state = blank();
-function blank(){ return {v:1, settings:{pay:0, anchor:"", cushion:0}, bills:[], paid:{}, checkins:{}, example:false}; }
+function defaultAccounts(){ return [{name:"Checking",type:"bank"},{name:"Credit card",type:"card"}]; }
+function blank(){ return {v:1, settings:{pay:0, anchor:"", cushion:0}, accounts:defaultAccounts(), bills:[], paid:{}, checkins:{}, example:false}; }
+// Make sure every account a bill uses exists (older data, imports). Unknown names become cards.
+function syncAccounts(s){
+  if(!Array.isArray(s.accounts)||!s.accounts.length) s.accounts=[{name:"Checking",type:"bank"}];
+  const have=new Set(s.accounts.map(a=>a.name));
+  for(const b of s.bills){ if(!b.acct) b.acct=s.accounts.find(a=>a.type==="bank")?.name||s.accounts[0].name;
+    if(!have.has(b.acct)){ s.accounts.push({name:b.acct,type:/check|saving|bank/i.test(b.acct)?"bank":"card"}); have.add(b.acct); } }
+  if(!s.accounts.some(a=>a.type==="bank")) s.accounts.unshift({name:"Checking",type:"bank"});
+  return s;
+}
 const view = { offset:0, calY:TODAY.getFullYear(), calM:TODAY.getMonth(), sel:TODAY_S };
 const uid = () => Math.random().toString(36).slice(2,10);
 
@@ -438,10 +464,12 @@ function fillItems(ul, items, checkable, emptyText){
     li.append(name,amt); ul.append(li);
   }
 }
-function isChecking(b){ return !b.acct || b.acct==="Checking"; }
+function acctOf(b){ return state.accounts.find(a=>a.name===b.acct); }
+function isChecking(b){ const a=acctOf(b); return !a || a.type==="bank"; }
+function primaryBank(){ return (state.accounts.find(a=>a.type==="bank")||state.accounts[0]).name; }
 function cardsNow(){ return state.settings.cardsNow!==false; }
 function counts(b){ return isChecking(b) || cardsNow(); }
-function acctTag(el,b){ if(isChecking(b)) return; const t=document.createElement("span"); t.className="tag"; t.textContent=b.acct; el.append(t); }
+function acctTag(el,b){ if(!b.acct || b.acct===primaryBank()) return; const t=document.createElement("span"); t.className="tag"; t.textContent=b.acct; el.append(t); }
 function freqText(b){ return b.freq==="monthly"?"Monthly on the "+ord(b.day):b.freq==="biweekly"?"Every 2 weeks":"One time"; }
 function ord(n){ const s=["th","st","nd","rd"], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
 
@@ -506,7 +534,9 @@ function openBill(b){
   editing=b||null;
   $("bill-title").textContent=b?"Edit bill":"Add bill";
   $("bill-name").value=b?b.name:""; $("bill-amount").value=b?b.amount:"";
-  $("bill-acct").value=b&&b.acct?b.acct:"Checking";
+  { const sel=$("bill-acct"); sel.innerHTML="";
+    for(const a of state.accounts){ const o=document.createElement("option"); o.value=a.name; o.textContent=a.name+(a.type==="card"?" (card)":""); sel.append(o); }
+    sel.value = b&&b.acct&&state.accounts.some(a=>a.name===b.acct) ? b.acct : primaryBank(); }
   $("bill-freq").value=b?b.freq:"monthly"; $("bill-day").value=b&&b.day?b.day:Math.min(TODAY.getDate(),28);
   $("bill-date").value=b&&b.date?b.date:(view.sel||TODAY_S);
   $("bill-delete").hidden=!b; syncFreq();
@@ -533,7 +563,7 @@ $("bill-delete").addEventListener("click",()=>{
 });
 
 // ---------- settings ----------
-function openSettings(){ $("set-pay").value=state.settings.pay||""; $("set-anchor").value=state.settings.anchor; $("set-cushion").value=state.settings.cushion||""; $("set-cards").checked=cardsNow(); $("wipe-confirm").hidden=true; $("backup-text").hidden=true; $("backup-restore-row").hidden=true; msg(""); $("set-scrim").hidden=false; }
+function openSettings(){ $("set-pay").value=state.settings.pay||""; $("set-anchor").value=state.settings.anchor; $("set-cushion").value=state.settings.cushion||""; $("set-cards").checked=cardsNow(); $("wipe-confirm").hidden=true; $("backup-text").hidden=true; $("backup-restore-row").hidden=true; msg(""); $("acct-confirm").hidden=true; $("acct-msg").textContent=""; renderAccounts(); $("set-scrim").hidden=false; }
 $("open-settings").addEventListener("click",openSettings);
 $("set-cancel").addEventListener("click",()=>$("set-scrim").hidden=true);
 $("set-scrim").addEventListener("click",e=>{ if(e.target===$("set-scrim")) $("set-scrim").hidden=true; });
@@ -548,6 +578,50 @@ $("set-form").addEventListener("submit",e=>{
 $("wipe").addEventListener("click",()=>$("wipe-confirm").hidden=false);
 $("wipe-no").addEventListener("click",()=>$("wipe-confirm").hidden=true);
 $("wipe-yes").addEventListener("click",()=>{ state=blank(); $("set-scrim").hidden=true; save(); render(); });
+
+// ---------- accounts ----------
+let acctPending=null;
+function renderAccounts(){
+  const ul=$("acct-list"); ul.innerHTML="";
+  for(const a of state.accounts){
+    const n=state.bills.filter(b=>b.acct===a.name).length;
+    const li=document.createElement("li"); li.className="item"; li.style.gridTemplateColumns="1fr auto";
+    const t=document.createElement("div"); const nm=document.createElement("div"); nm.textContent=a.name;
+    const s=document.createElement("div"); s.className="sub"; s.style.fontSize="12px"; s.textContent=(a.type==="card"?"Credit card":"Bank account")+" · "+n+" bill"+(n===1?"":"s");
+    t.append(nm,s);
+    const rm=document.createElement("button"); rm.type="button"; rm.className="btn sm ghost"; rm.style.color="var(--bad)"; rm.textContent="Remove";
+    rm.setAttribute("aria-label","Remove "+a.name);
+    rm.addEventListener("click",()=>askRemove(a));
+    li.append(t,rm); ul.append(li);
+  }
+}
+function askRemove(a){
+  $("acct-msg").textContent="";
+  if(state.accounts.length===1){ $("acct-msg").textContent="Keep at least one account."; return; }
+  const others=state.accounts.filter(x=>x!==a);
+  if(a.type==="bank" && !others.some(x=>x.type==="bank")){ $("acct-msg").textContent="Keep at least one bank account. Add another bank account first."; return; }
+  const n=state.bills.filter(b=>b.acct===a.name).length;
+  const dest=(others.find(x=>x.type==="bank")||others[0]).name;
+  if(!n){ removeAccount(a,dest); return; }
+  acctPending={a,dest};
+  $("acct-confirm-text").textContent=n+" bill"+(n===1?" is":"s are")+" paid from "+a.name+". "+(n===1?"It":"They")+" will move to "+dest+".";
+  $("acct-confirm").hidden=false;
+}
+function removeAccount(a,dest){
+  state.bills.forEach(b=>{ if(b.acct===a.name) b.acct=dest; });
+  state.accounts=state.accounts.filter(x=>x!==a);
+  acctPending=null; $("acct-confirm").hidden=true; save(); render(); renderAccounts();
+}
+$("acct-confirm-yes").addEventListener("click",()=>{ if(acctPending) removeAccount(acctPending.a,acctPending.dest); });
+$("acct-confirm-no").addEventListener("click",()=>{ acctPending=null; $("acct-confirm").hidden=true; });
+$("acct-add").addEventListener("click",()=>{
+  const name=$("acct-name").value.trim();
+  if(!name){ $("acct-msg").textContent="Type a name for the account."; $("acct-name").focus(); return; }
+  if(state.accounts.some(a=>a.name.toLowerCase()===name.toLowerCase())){ $("acct-msg").textContent=name+" is already on the list."; return; }
+  state.accounts.push({name,type:$("acct-type").value}); $("acct-name").value=""; $("acct-msg").textContent="Added "+name+".";
+  save(); render(); renderAccounts();
+});
+$("acct-name").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("acct-add").click(); } });
 
 // ---------- backup ----------
 function backupText(){ return JSON.stringify({app:"payday-planner", exported:TODAY_S, state}); }
@@ -577,15 +651,16 @@ $("setup-start").addEventListener("click",()=>{
 });
 $("setup-example").addEventListener("click",()=>{
   const a=lastFriday();
-  state={v:1, example:true, paid:{}, settings:{pay:2000, anchor:a, cushion:100}, bills:[
+  state={v:1, example:true, paid:{}, checkins:{}, accounts:defaultAccounts(), settings:{pay:2000, anchor:a, cushion:100}, bills:[
     {id:uid(),name:"Rent",amount:1200,freq:"monthly",day:1},
     {id:uid(),name:"Car insurance",amount:140,freq:"monthly",day:5},
     {id:uid(),name:"Car payment",amount:350,freq:"monthly",day:12},
     {id:uid(),name:"Internet",amount:60,freq:"monthly",day:15},
     {id:uid(),name:"Phone",amount:65,freq:"monthly",day:20},
     {id:uid(),name:"Credit card payment",amount:200,freq:"monthly",day:25},
-    {id:uid(),name:"Groceries & gas",amount:250,freq:"biweekly",date:F(add(P(a),1))}
+    {id:uid(),name:"Groceries & gas",amount:250,freq:"biweekly",date:F(add(P(a),1)),acct:"Credit card"}
   ]};
+  syncAccounts(state);
   save(); render();
 });
 $("clear-examples").addEventListener("click",()=>{ const s=state.settings; state=blank(); state.settings={pay:0,anchor:s.anchor,cushion:0}; $("setup-pay").value=""; save(); render(); });
@@ -601,7 +676,7 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeBill(); $("s
 let docRef=null, mode="local", dirty=false, saving=false, timer=null, synced=false;
 function readLocal(){ try{ const s=localStorage.getItem(LS_KEY); return s?JSON.parse(s):null; }catch(e){ return null; } }
 function writeLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
-function normalize(d){ const b=blank(); if(!d||typeof d!=="object") return b; return {v:1, settings:Object.assign(b.settings,d.settings||{}), bills:Array.isArray(d.bills)?d.bills.map(x=>({...x, acct:x.acct||"Checking"})):[], paid:d.paid&&typeof d.paid==="object"?{...d.paid}:{}, checkins:d.checkins&&typeof d.checkins==="object"?{...d.checkins}:{}, example:!!d.example, imported:!!d.imported}; }
+function normalize(d){ const b=blank(); if(!d||typeof d!=="object") return b; return syncAccounts({v:1, settings:Object.assign(b.settings,d.settings||{}), accounts:Array.isArray(d.accounts)?d.accounts.map(a=>({name:String(a.name),type:a.type==="card"?"card":"bank"})):null, bills:Array.isArray(d.bills)?d.bills.map(x=>({...x})):[], paid:d.paid&&typeof d.paid==="object"?{...d.paid}:{}, checkins:d.checkins&&typeof d.checkins==="object"?{...d.checkins}:{}, example:!!d.example, imported:!!d.imported}); }
 function save(){ writeLocal(); if(docRef){ dirty=true; clearTimeout(timer); timer=setTimeout(flush,500); } renderStatus(); }
 async function flush(){
   if(saving||!docRef) return; saving=true;

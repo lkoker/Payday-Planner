@@ -1,6 +1,6 @@
 // Payday Planner service worker: offline app shell + cached fonts.
 // Bump VERSION whenever you change index.html so phones pick up the update.
-const VERSION = "payday-v2";
+const VERSION = "payday-v4";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-maskable-512.png"];
 
 self.addEventListener("install", e => {
