@@ -1,0 +1,16 @@
+{
+  "name": "Payday Planner",
+  "short_name": "Payday",
+  "description": "Bill calendar and how much to keep in checking each bi-weekly pay period.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E1513",
+  "theme_color": "#1E7457",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
