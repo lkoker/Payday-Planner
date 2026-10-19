@@ -135,7 +135,7 @@ input,select,textarea{font:inherit;color:var(--ink);background:var(--sunk);borde
   <header class="top">
     <div>
       <h1>Payday Planner</h1>
-      <div class="sub" id="tagline">Bi-weekly pay · checking needed per period</div>
+      <div class="sub" id="tagline">What to keep in checking until your next payday</div>
     </div>
     <button class="icon-btn" id="open-settings" aria-label="Settings" hidden>
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
@@ -145,11 +145,13 @@ input,select,textarea{font:inherit;color:var(--ink);background:var(--sunk);borde
   <!-- Setup (shown until paychecks are set) -->
   <section class="panel setup" id="setup">
     <h2>Set up your paychecks</h2>
-    <p>Enter your take-home pay and one recent payday. The planner will lay out every payday, show your bills on a calendar, and tell you how much to keep in checking for each pay period.</p>
+    <p>Start with your main paycheck. The planner lays out every payday, shows your bills on a calendar, and tells you how much to keep in checking until the next payday. You can add more income, like a second job or a monthly check, in Settings.</p>
     <div class="two">
       <div class="field"><label for="setup-pay">Take-home per check</label><input id="setup-pay" type="number" inputmode="decimal" min="0" step="0.01" placeholder="2000"></div>
-      <div class="field"><label for="setup-anchor">A recent payday</label><input id="setup-anchor" type="date"></div>
+      <div class="field"><label for="setup-freq">How often</label>
+        <select id="setup-freq"><option value="biweekly">Every 2 weeks</option><option value="weekly">Every week</option><option value="semimonthly">Twice a month</option><option value="monthly">Once a month</option></select></div>
     </div>
+    <div class="field"><label for="setup-anchor">A recent payday</label><input id="setup-anchor" type="date"><span class="hint" id="setup-anchor-hint">Any past payday works. The planner counts forward from it.</span></div>
     <div class="field"><label for="setup-cushion">Minimum balance to keep in checking</label><input id="setup-cushion" type="number" inputmode="decimal" min="0" step="1" placeholder="100"><span class="hint">The floor your checking never drops below after bills, like $500. Optional.</span></div>
     <div class="actions">
       <button class="btn" id="setup-start">Start planning</button>
@@ -242,7 +244,7 @@ input,select,textarea{font:inherit;color:var(--ink);background:var(--sunk);borde
     <div class="two">
       <div class="field"><label for="bill-amount">Amount</label><input id="bill-amount" type="number" inputmode="decimal" min="0" step="0.01" required></div>
       <div class="field"><label for="bill-freq">Repeats</label>
-        <select id="bill-freq"><option value="monthly">Monthly</option><option value="biweekly">Every 2 weeks</option><option value="once">One time</option></select></div>
+        <select id="bill-freq"><option value="monthly">Monthly</option><option value="biweekly">Every 2 weeks</option><option value="weekly">Every week</option><option value="once">One time</option></select></div>
     </div>
     <div class="field"><label for="bill-acct">Paid from</label>
       <select id="bill-acct"></select>
@@ -261,11 +263,14 @@ input,select,textarea{font:inherit;color:var(--ink);background:var(--sunk);borde
 <div class="scrim" id="set-scrim" hidden>
   <form class="sheet" id="set-form" aria-labelledby="set-title">
     <div class="grab"></div>
-    <h2 id="set-title">Paycheck settings</h2>
-    <div class="two">
-      <div class="field"><label for="set-pay">Take-home per check</label><input id="set-pay" type="number" inputmode="decimal" min="0" step="0.01"></div>
-      <div class="field"><label for="set-anchor">A recent payday</label><input id="set-anchor" type="date"></div>
+    <h2 id="set-title">Settings</h2>
+    <div class="field">
+      <span class="label">Income</span>
+      <span class="hint">Every paycheck or deposit. A pay period runs from any payday to the day before the next one.</span>
+      <ul class="items" id="inc-list"></ul>
+      <div class="actions"><button class="btn sm ghost" type="button" id="inc-add">Add income</button></div>
     </div>
+    <div class="perf" style="margin:4px 0"></div>
     <div class="field"><label for="set-cushion">Minimum balance to keep in checking</label><input id="set-cushion" type="number" inputmode="decimal" min="0" step="1"></div>
     <label for="set-cards" style="display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer"><input type="checkbox" class="check" id="set-cards" style="flex:none;margin-top:1px"><span><b>I pay my cards off right away</b><br><span class="sub">Count card charges toward what I keep in checking.</span></span></label>
     <div class="actions"><button class="btn" type="submit">Save</button><button class="btn ghost" type="button" id="set-cancel">Cancel</button></div>
@@ -311,6 +316,31 @@ input,select,textarea{font:inherit;color:var(--ink);background:var(--sunk);borde
   </form>
 </div>
 
+<!-- Income sheet -->
+<div class="scrim" id="inc-scrim" hidden>
+  <form class="sheet" id="inc-form" aria-labelledby="inc-title">
+    <div class="grab"></div>
+    <h2 id="inc-title">Add income</h2>
+    <div class="field"><label for="inc-name">Name</label><input id="inc-name" required placeholder="Main job, side job, monthly check…" maxlength="40"></div>
+    <div class="two">
+      <div class="field"><label for="inc-amount">Take-home amount</label><input id="inc-amount" type="number" inputmode="decimal" min="0" step="0.01" required></div>
+      <div class="field"><label for="inc-freq">How often</label>
+        <select id="inc-freq"><option value="biweekly">Every 2 weeks</option><option value="weekly">Every week</option><option value="semimonthly">Twice a month</option><option value="monthly">Once a month</option></select></div>
+    </div>
+    <div class="field" id="inc-date-field"><label for="inc-date">A recent payday</label><input id="inc-date" type="date"><span class="hint">Any past payday works. The planner counts forward from it.</span></div>
+    <div class="two" id="inc-days-field">
+      <div class="field"><label for="inc-day" id="inc-day-label">Day of month</label><input id="inc-day" type="number" inputmode="numeric" min="1" max="31"></div>
+      <div class="field" id="inc-day2-field"><label for="inc-day2">Second day</label><input id="inc-day2" type="number" inputmode="numeric" min="1" max="31"></div>
+    </div>
+    <div class="actions">
+      <button class="btn" type="submit">Save income</button>
+      <button class="btn ghost" type="button" id="inc-cancel">Cancel</button>
+      <button class="btn ghost" type="button" id="inc-delete" style="color:var(--bad);margin-left:auto" hidden>Remove</button>
+    </div>
+    <span class="sub" id="inc-msg" role="status"></span>
+  </form>
+</div>
+
 <script>
 (function(){
 const $ = id => document.getElementById(id);
@@ -331,7 +361,13 @@ const now = new Date(); const TODAY = new Date(now.getFullYear(),now.getMonth(),
 // ---------- state ----------
 let state = blank();
 function defaultAccounts(){ return [{name:"Checking",type:"bank"},{name:"Credit card",type:"card"}]; }
-function blank(){ return {v:1, settings:{pay:0, anchor:"", cushion:0}, accounts:defaultAccounts(), bills:[], paid:{}, checkins:{}, example:false}; }
+function blank(){ return {v:2, settings:{cushion:0}, incomes:[], accounts:defaultAccounts(), bills:[], paid:{}, checkins:{}, example:false}; }
+// Older saves had one bi-weekly paycheck in settings.pay / settings.anchor.
+function migrateIncomes(d){
+  if(Array.isArray(d.incomes)) return d.incomes.map(x=>({...x, amount:+x.amount||0}));
+  const s=d.settings||{};
+  return (s.pay>0 && s.anchor) ? [{id:uid(), name:"Paycheck", amount:+s.pay, freq:"biweekly", date:s.anchor}] : [];
+}
 // Make sure every account a bill uses exists (older data, imports). Unknown names become cards.
 function syncAccounts(s){
   if(!Array.isArray(s.accounts)||!s.accounts.length) s.accounts=[{name:"Checking",type:"bank"}];
@@ -344,26 +380,24 @@ function syncAccounts(s){
 const view = { offset:0, calY:TODAY.getFullYear(), calM:TODAY.getMonth(), sel:TODAY_S };
 const uid = () => Math.random().toString(36).slice(2,10);
 
-function periodAt(offset){
-  const A = P(state.settings.anchor);
-  const k = Math.floor(diff(A,TODAY)/14) + offset;
-  const start = add(A,14*k);
-  return {start, end:add(start,13), next:add(start,14)};
-}
-function isPayday(d){ if(!state.settings.anchor) return false; return ((diff(P(state.settings.anchor),d)%14)+14)%14===0; }
+// Dates a bill or income lands on between s and e (inclusive). Works for both.
 function occurrences(b,s,e){
   const out=[];
-  if(b.freq==="monthly"){
+  if(b.freq==="monthly" || b.freq==="semimonthly"){
+    const days = b.freq==="semimonthly" ? [b.day, b.day2] : [b.day];
     let y=s.getFullYear(), m=s.getMonth();
     while(y<e.getFullYear() || (y===e.getFullYear() && m<=e.getMonth())){
-      const dim=new Date(y,m+1,0).getDate();
-      const d=new Date(y,m,Math.min(b.day,dim),12);
-      if(d>=s && d<=e) out.push(F(d));
+      const dim=new Date(y,m+1,0).getDate(), seen=new Set();
+      for(const dd of days){ if(!dd) continue; const day=Math.min(dd,dim); if(seen.has(day)) continue; seen.add(day);
+        const d=new Date(y,m,day,12); if(d>=s && d<=e) out.push(F(d)); }
       m++; if(m>11){m=0;y++;}
     }
-  } else if(b.freq==="biweekly" && b.date){
-    const B=P(b.date); let k=Math.ceil(diff(B,s)/14); if(k<0)k=0;
-    for(let d=add(B,14*k); d<=e; d=add(d,14)) if(d>=s) out.push(F(d));
+    out.sort();
+  } else if((b.freq==="biweekly" || b.freq==="weekly") && b.date){
+    const step=b.freq==="weekly"?7:14, B=P(b.date);
+    // Anchor dates can be in the past or future; step to the first hit on or after s.
+    let k=Math.ceil(diff(B,s)/step);
+    for(let d=add(B,step*k); d<=e; d=add(d,step)) if(d>=s) out.push(F(d));
   } else if(b.freq==="once" && b.date){
     const d=P(b.date); if(d>=s && d<=e) out.push(b.date);
   }
@@ -376,9 +410,30 @@ function itemsIn(s,e){
 }
 const sum = arr => arr.reduce((t,i)=>t+(+i.b.amount||0),0);
 
+// ---------- paydays & pay periods (from every income) ----------
+function paydaysBetween(s,e){
+  const set=new Set();
+  for(const inc of state.incomes) for(const d of occurrences(inc,s,e)) set.add(d);
+  return [...set].sort();
+}
+function isPayday(d){ return state.incomes.some(inc=>occurrences(inc,d,d).length>0); }
+function incomeOn(d){ return state.incomes.filter(inc=>occurrences(inc,d,d).length>0); }
+function lastPaydayOnOrBefore(d){ const l=paydaysBetween(add(d,-70),d); return l.length?P(l[l.length-1]):null; }
+function nextPaydayAfter(d){ const l=paydaysBetween(add(d,1),add(d,70)); return l.length?P(l[0]):null; }
+function periodAt(offset){
+  let start = lastPaydayOnOrBefore(TODAY) || nextPaydayAfter(TODAY) || TODAY;
+  for(let i=0;i<Math.abs(offset);i++){
+    const n = offset>0 ? nextPaydayAfter(start) : lastPaydayOnOrBefore(add(start,-1));
+    if(!n) break; start=n;
+  }
+  const nx=nextPaydayAfter(start);
+  return {start, end: nx?add(nx,-1):add(start,13), next:nx};
+}
+function monthlyEquiv(x){ const a=+x.amount||0; return {weekly:a*52/12, biweekly:a*26/12, semimonthly:a*2, monthly:a}[x.freq]||0; }
+
 // ---------- render ----------
 function render(){
-  const ready = !!(state.settings.anchor && state.settings.pay>0);
+  const ready = state.incomes.length>0;
   $("setup").hidden = ready; $("app").hidden = !ready; $("open-settings").hidden = !ready;
   if(!ready) return;
   $("example-banner").hidden = !state.example;
@@ -395,7 +450,7 @@ function renderCheckin(){
   const {start,end}=periodAt(0), key=F(start), ci=state.checkins[key];
   const isToday = key===TODAY_S;
   $("checkin-title").textContent = isToday ? "It's payday!" : "Payday check-in";
-  $("checkin-date").textContent = "Paid "+short(start);
+  $("checkin-date").textContent = "Payday "+short(start);
   const showForm = !ci || checkinEditing;
   $("checkin-form").hidden=!showForm; $("checkin-result").hidden=showForm;
   if(showForm){ if(ci) $("checkin-bal").value=ci.balance; return; }
@@ -425,7 +480,8 @@ function renderPeriod(){
   const items = itemsIn(start,end);
   const chk = items.filter(i=>counts(i.b)), card = items.filter(i=>!counts(i.b));
   const onCardCount = chk.filter(i=>!isChecking(i.b)).length;
-  const bills = sum(chk), cushion=+state.settings.cushion||0, pay=+state.settings.pay||0;
+  const incs = incomeOn(start);
+  const bills = sum(chk), cushion=+state.settings.cushion||0, pay=incs.reduce((t,x)=>t+(+x.amount||0),0);
   const need = bills+cushion, left = pay-need;
   const unpaid = sum(chk.filter(i=>!state.paid[i.key]));
   $("period-label").textContent = view.offset===0?"This pay period":view.offset===1?"Next pay period":view.offset===-1?"Last pay period":(view.offset>0?"In "+view.offset+" pay periods":Math.abs(view.offset)+" pay periods ago");
@@ -434,11 +490,16 @@ function renderPeriod(){
   const pill=$("status-pill"); pill.className="pill "+(left<0?"bad":left<pay*0.1?"warn":"ok");
   pill.textContent = left<0 ? "Short "+money.format(-left)+". Pull from savings or move a bill" : money.format(left)+" left after bills";
   $("ledger").innerHTML="";
-  const rows=[["Paycheck "+short(start),money.format(pay)],["Bills to cover ("+chk.length+(onCardCount?", "+onCardCount+" on cards":"")+")","− "+money.format(bills)],["Minimum balance kept","− "+money.format(cushion)],["Left to spend or save",money.format(left)]];
-  if(card.length) rows.push(["On cards this period ("+card.length+"), not from checking",money.format(sum(card))]);
+  const rows=[];
+  if(incs.length) incs.forEach(x=>rows.push([x.name+" · "+short(start),money.format(+x.amount||0)]));
+  else rows.push(["No income on "+short(start),money.format(0)]);
+  rows.push(["Bills to cover ("+chk.length+(onCardCount?", "+onCardCount+" on cards":"")+")","− "+money.format(bills)]);
+  rows.push(["Minimum balance kept","− "+money.format(cushion)]);
+  rows.push(["Left to spend or save",money.format(left),"tot"]);
+  if(card.length) rows.push(["On cards this period ("+card.length+"), not from checking",money.format(sum(card)),"sub"]);
   const ci=state.checkins[F(start)];
-  if(ci){ const x=ci.balance-ci.unpaid-ci.min; rows.push(["Checked in "+short(P(ci.at))+": balance "+money.format(ci.balance), (x>=0?"Extra ":"Short ")+money.format(Math.abs(x))]); }
-  rows.forEach((r,i)=>{ const a=document.createElement("span"), b=document.createElement("span"); a.textContent=r[0]; b.textContent=r[1]; b.className="v"; if(i===3){a.className="tot";b.className+=" tot";} if(i>3){a.className="sub";b.className+=" sub";} $("ledger").append(a,b); });
+  if(ci){ const x=ci.balance-ci.unpaid-ci.min; rows.push(["Checked in "+short(P(ci.at))+": balance "+money.format(ci.balance), (x>=0?"Extra ":"Short ")+money.format(Math.abs(x)),"sub"]); }
+  rows.forEach(r=>{ const a=document.createElement("span"), b=document.createElement("span"); a.textContent=r[0]; b.textContent=r[1]; b.className="v"; if(r[2]){a.className=r[2];b.className+=" "+r[2];} $("ledger").append(a,b); });
   $("left-to-pay").textContent = items.length? (unpaid? money.format(unpaid)+" still to pay":"All paid") : "";
   fillItems($("period-items"), items, true, "No bills land between "+short(start)+" and "+short(end)+".");
   $("prev-period").disabled=false;
@@ -470,7 +531,14 @@ function primaryBank(){ return (state.accounts.find(a=>a.type==="bank")||state.a
 function cardsNow(){ return state.settings.cardsNow!==false; }
 function counts(b){ return isChecking(b) || cardsNow(); }
 function acctTag(el,b){ if(!b.acct || b.acct===primaryBank()) return; const t=document.createElement("span"); t.className="tag"; t.textContent=b.acct; el.append(t); }
-function freqText(b){ return b.freq==="monthly"?"Monthly on the "+ord(b.day):b.freq==="biweekly"?"Every 2 weeks":"One time"; }
+const DOW=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+function freqText(b){
+  if(b.freq==="monthly") return "Monthly on the "+ord(b.day);
+  if(b.freq==="semimonthly") return "On the "+ord(b.day)+" & "+ord(b.day2);
+  if(b.freq==="biweekly") return "Every other "+(b.date?DOW[P(b.date).getDay()]:"week");
+  if(b.freq==="weekly") return "Every "+(b.date?DOW[P(b.date).getDay()]:"week");
+  return "One time";
+}
 function ord(n){ const s=["th","st","nd","rd"], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
 
 function renderCalendar(){
@@ -480,9 +548,10 @@ function renderCalendar(){
   const gStart=add(first,-first.getDay()), gEnd=add(gStart,41);
   const items=itemsIn(gStart,gEnd); const byDay={};
   items.forEach(i=>{ (byDay[i.date]=byDay[i.date]||[]).push(i); });
-  let paydays=0; for(let d=first; d<=last; d=add(d,1)) if(isPayday(d)) paydays++;
+  const paydays=paydaysBetween(first,last);
+  let monthIncome=0; for(const inc of state.incomes) monthIncome+=occurrences(inc,first,last).length*(+inc.amount||0);
   const monthBills=sum(items.filter(i=>P(i.date).getMonth()===m));
-  $("cal-note").textContent = paydays+" paydays · "+money.format(monthBills)+" in bills"+(paydays===3?" · 3-paycheck month, one check is extra":"");
+  $("cal-note").textContent = paydays.length+" payday"+(paydays.length===1?"":"s")+" · "+money.format(monthIncome)+" in · "+money.format(monthBills)+" in bills";
   const cal=$("cal"); cal.innerHTML="";
   ["S","M","T","W","T","F","S"].forEach(x=>{const e=document.createElement("div"); e.className="dow"; e.textContent=x; cal.append(e);});
   for(let i=0;i<42;i++){
@@ -498,10 +567,13 @@ function renderCalendar(){
   }
   // detail
   const sd=P(view.sel), dd=$("day-detail"); dd.innerHTML="";
-  const h=document.createElement("div"); h.className="label"; h.textContent=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][sd.getDay()]+", "+MONTHS[sd.getMonth()]+" "+sd.getDate()+(isPayday(sd)?" · Payday "+money.format(state.settings.pay):"");
+  const pays=incomeOn(sd);
+  const h=document.createElement("div"); h.className="label"; h.textContent=DOW[sd.getDay()]+", "+MONTHS[sd.getMonth()]+" "+sd.getDate()+(pays.length?" · Payday":"");
+  dd.append(h);
+  if(pays.length){ const p=document.createElement("div"); p.className="sub num"; p.style.color="var(--accent)"; p.textContent=pays.map(x=>"+ "+money.format(+x.amount||0)+" "+x.name).join(" · "); dd.append(p); }
   const ul=document.createElement("ul"); ul.className="items";
-  fillItems(ul, itemsIn(sd,sd), false, isPayday(sd)?"Paycheck lands. No bills due.":"Nothing due.");
-  dd.append(h,ul);
+  fillItems(ul, itemsIn(sd,sd), false, pays.length?"No bills due.":"Nothing due.");
+  dd.append(ul);
 }
 
 function renderBills(){
@@ -510,17 +582,17 @@ function renderBills(){
   if(!sorted.length){ const li=document.createElement("li"); li.className="empty"; li.textContent="No bills yet. Add rent, car, phone, card payments and anything else that leaves checking."; ul.append(li); }
   for(const b of sorted){
     const li=document.createElement("li"); li.className="item";
-    const w=document.createElement("span"); w.className="when"; w.textContent = b.freq==="monthly"? ord(b.day) : b.freq==="biweekly"?"2 wk": b.date? short(P(b.date)):"";
+    const w=document.createElement("span"); w.className="when"; w.textContent = b.freq==="monthly"? ord(b.day) : b.freq==="biweekly"?"2 wk": b.freq==="weekly"?"1 wk": b.date? short(P(b.date)):"";
     const n=document.createElement("button"); n.type="button"; n.style.cssText="all:unset;cursor:pointer;min-width:0;overflow-wrap:anywhere";
     const t=document.createElement("div"); t.textContent=b.name; acctTag(t,b); const s=document.createElement("div"); s.className="sub"; s.style.fontSize="12px"; s.textContent=freqText(b); n.append(t,s);
     n.addEventListener("click",()=>openBill(b));
     const a=document.createElement("span"); a.className="amt"; a.textContent=money.format(+b.amount||0);
     li.append(w,n,a); ul.append(li);
   }
-  const mo = b => b.freq==="monthly"?+b.amount:b.freq==="biweekly"?+b.amount*26/12:0;
+  const mo = monthlyEquiv;
   const fromChk = state.bills.filter(isChecking).reduce((t,b)=>t+mo(b),0);
   const onCard = state.bills.filter(b=>!isChecking(b)).reduce((t,b)=>t+mo(b),0);
-  const income = (+state.settings.pay||0)*26/12;
+  const income = state.incomes.reduce((t,x)=>t+mo(x),0);
   $("bill-monthly").textContent = !state.bills.length ? "" : cardsNow()
     ? "All bills ≈ "+money.format(fromChk+onCard)+"/mo ("+money.format(onCard)+" on cards) · pay ≈ "+money.format(income)+"/mo"
     : "From checking ≈ "+money.format(fromChk)+"/mo · on cards ≈ "+money.format(onCard)+"/mo · pay ≈ "+money.format(income)+"/mo";
@@ -528,7 +600,7 @@ function renderBills(){
 
 // ---------- bill sheet ----------
 let editing=null;
-function syncFreq(){ const f=$("bill-freq").value; $("day-field").hidden=f!=="monthly"; $("date-field").hidden=f==="monthly"; $("bill-date-label").textContent=f==="biweekly"?"First due date":"Due date"; }
+function syncFreq(){ const f=$("bill-freq").value; $("day-field").hidden=f!=="monthly"; $("date-field").hidden=f==="monthly"; $("bill-date-label").textContent=f==="once"?"Due date":"A recent or upcoming due date"; }
 $("bill-freq").addEventListener("change",syncFreq);
 function openBill(b){
   editing=b||null;
@@ -563,14 +635,12 @@ $("bill-delete").addEventListener("click",()=>{
 });
 
 // ---------- settings ----------
-function openSettings(){ $("set-pay").value=state.settings.pay||""; $("set-anchor").value=state.settings.anchor; $("set-cushion").value=state.settings.cushion||""; $("set-cards").checked=cardsNow(); $("wipe-confirm").hidden=true; $("backup-text").hidden=true; $("backup-restore-row").hidden=true; msg(""); $("acct-confirm").hidden=true; $("acct-msg").textContent=""; renderAccounts(); $("set-scrim").hidden=false; }
+function openSettings(){ renderIncomes(); $("set-cushion").value=state.settings.cushion||""; $("set-cards").checked=cardsNow(); $("wipe-confirm").hidden=true; $("backup-text").hidden=true; $("backup-restore-row").hidden=true; msg(""); $("acct-confirm").hidden=true; $("acct-msg").textContent=""; renderAccounts(); $("set-scrim").hidden=false; }
 $("open-settings").addEventListener("click",openSettings);
 $("set-cancel").addEventListener("click",()=>$("set-scrim").hidden=true);
 $("set-scrim").addEventListener("click",e=>{ if(e.target===$("set-scrim")) $("set-scrim").hidden=true; });
 $("set-form").addEventListener("submit",e=>{
   e.preventDefault();
-  const pay=+$("set-pay").value, anchor=$("set-anchor").value;
-  if(pay>0) state.settings.pay=pay; if(anchor) state.settings.anchor=anchor;
   state.settings.cushion=Math.max(0,+$("set-cushion").value||0);
   state.settings.cardsNow=$("set-cards").checked;
   $("set-scrim").hidden=true; view.offset=0; save(); render();
@@ -578,6 +648,61 @@ $("set-form").addEventListener("submit",e=>{
 $("wipe").addEventListener("click",()=>$("wipe-confirm").hidden=false);
 $("wipe-no").addEventListener("click",()=>$("wipe-confirm").hidden=true);
 $("wipe-yes").addEventListener("click",()=>{ state=blank(); $("set-scrim").hidden=true; save(); render(); });
+
+// ---------- income ----------
+let incEditing=null;
+function renderIncomes(){
+  const ul=$("inc-list"); ul.innerHTML="";
+  for(const inc of state.incomes){
+    const li=document.createElement("li"); li.className="item"; li.style.gridTemplateColumns="1fr auto";
+    const b=document.createElement("button"); b.type="button"; b.style.cssText="all:unset;cursor:pointer;min-width:0;overflow-wrap:anywhere";
+    const nm=document.createElement("div"); nm.textContent=inc.name;
+    const s=document.createElement("div"); s.className="sub"; s.style.fontSize="12px"; s.textContent=freqText(inc);
+    b.append(nm,s); b.addEventListener("click",()=>openIncome(inc));
+    const a=document.createElement("span"); a.className="amt num"; a.textContent=money.format(+inc.amount||0);
+    li.append(b,a); ul.append(li);
+  }
+  if(!state.incomes.length){ const li=document.createElement("li"); li.className="empty"; li.textContent="No income yet."; ul.append(li); }
+}
+function syncIncFreq(){
+  const f=$("inc-freq").value, byDate=(f==="weekly"||f==="biweekly");
+  $("inc-date-field").hidden=!byDate; $("inc-days-field").hidden=byDate; $("inc-day2-field").hidden=f!=="semimonthly";
+  $("inc-day-label").textContent=f==="semimonthly"?"First day":"Day of month";
+}
+$("inc-freq").addEventListener("change",syncIncFreq);
+function openIncome(inc){
+  incEditing=inc||null;
+  $("inc-title").textContent=inc?"Edit income":"Add income";
+  $("inc-name").value=inc?inc.name:(state.incomes.length?"Income "+(state.incomes.length+1):"Paycheck");
+  $("inc-amount").value=inc?inc.amount:"";
+  $("inc-freq").value=inc?inc.freq:"monthly";
+  $("inc-date").value=inc&&inc.date?inc.date:TODAY_S;
+  $("inc-day").value=inc&&inc.day?inc.day:15; $("inc-day2").value=inc&&inc.day2?inc.day2:30;
+  $("inc-delete").hidden=!inc; $("inc-msg").textContent=""; syncIncFreq();
+  $("inc-scrim").hidden=false; setTimeout(()=>$("inc-name").focus(),50);
+}
+function closeIncome(){ $("inc-scrim").hidden=true; incEditing=null; }
+$("inc-add").addEventListener("click",()=>openIncome());
+$("inc-cancel").addEventListener("click",closeIncome);
+$("inc-scrim").addEventListener("click",e=>{ if(e.target===$("inc-scrim")) closeIncome(); });
+const clampDay = v => Math.min(31,Math.max(1,parseInt(v)||1));
+$("inc-form").addEventListener("submit",e=>{
+  e.preventDefault();
+  const f=$("inc-freq").value, byDate=(f==="weekly"||f==="biweekly");
+  const amount=+$("inc-amount").value;
+  if(!(amount>0)){ $("inc-msg").textContent="Enter the take-home amount for this income."; return; }
+  if(byDate && !$("inc-date").value){ $("inc-msg").textContent="Pick a recent payday so the planner can count forward."; return; }
+  const rec={ id:incEditing?incEditing.id:uid(), name:$("inc-name").value.trim()||"Income", amount:Math.round(amount*100)/100, freq:f,
+    date: byDate?$("inc-date").value:null, day: byDate?null:clampDay($("inc-day").value), day2: f==="semimonthly"?clampDay($("inc-day2").value):null };
+  if(incEditing) state.incomes=state.incomes.map(x=>x.id===incEditing.id?rec:x); else state.incomes.push(rec);
+  closeIncome(); view.offset=0; save(); render(); renderIncomes();
+});
+$("inc-delete").addEventListener("click",()=>{
+  if(!incEditing) return;
+  if(state.incomes.length===1){ $("inc-msg").textContent="Keep at least one income. Edit this one instead, or add another first."; return; }
+  state.incomes=state.incomes.filter(x=>x.id!==incEditing.id);
+  closeIncome(); view.offset=0; save(); render(); renderIncomes();
+});
 
 // ---------- accounts ----------
 let acctPending=null;
@@ -633,7 +758,7 @@ $("backup-copy").addEventListener("click",()=>{
 });
 $("backup-restore-open").addEventListener("click",()=>{ $("backup-text").hidden=false; $("backup-text").value=""; $("backup-restore-row").hidden=false; $("backup-text").focus(); msg("Paste a backup, or choose a backup file."); });
 function restoreFrom(text){
-  try{ const o=JSON.parse(text); const s=normalize(o.state||o); if(!s.settings.anchor&&!s.bills.length) throw 0;
+  try{ const o=JSON.parse(text); const s=normalize(o.state||o); if(!s.incomes.length&&!s.bills.length) throw 0;
     state=s; save(); render(); $("set-scrim").hidden=true; msg(""); }
   catch(e){ msg("That doesn't look like a Payday Planner backup. Copy it again and paste the whole thing."); }
 }
@@ -644,14 +769,19 @@ $("backup-upload").addEventListener("change",e=>{ const f=e.target.files&&e.targ
 function lastFriday(){ let d=TODAY; while(d.getDay()!==5) d=add(d,-1); return F(d); }
 $("setup-anchor").value=lastFriday();
 $("setup-start").addEventListener("click",()=>{
-  const pay=+$("setup-pay").value, anchor=$("setup-anchor").value;
+  const pay=+$("setup-pay").value, anchor=$("setup-anchor").value, f=$("setup-freq").value;
   if(!(pay>0)||!anchor){ $("setup-err").hidden=false; $("setup-err").textContent="Add your take-home pay and a payday date to start."; return; }
-  state.settings={pay,anchor,cushion:Math.max(0,+$("setup-cushion").value||0)}; state.example=false;
+  const d=P(anchor).getDate();
+  const inc={id:uid(), name:"Paycheck", amount:pay, freq:f, date:(f==="weekly"||f==="biweekly")?anchor:null,
+    day:(f==="monthly"||f==="semimonthly")?d:null, day2:f==="semimonthly"?(d<=15?Math.min(d+15,31):d-15):null};
+  if(inc.day2 && inc.day2<inc.day){ const t=inc.day; inc.day=inc.day2; inc.day2=t; }
+  state.incomes=[inc]; state.settings.cushion=Math.max(0,+$("setup-cushion").value||0); state.example=false;
   save(); render();
 });
 $("setup-example").addEventListener("click",()=>{
   const a=lastFriday();
-  state={v:1, example:true, paid:{}, checkins:{}, accounts:defaultAccounts(), settings:{pay:2000, anchor:a, cushion:100}, bills:[
+  state={v:2, example:true, paid:{}, checkins:{}, accounts:defaultAccounts(), settings:{cushion:100},
+    incomes:[{id:uid(),name:"Main job",amount:2000,freq:"biweekly",date:a},{id:uid(),name:"Side gig",amount:400,freq:"monthly",day:15}], bills:[
     {id:uid(),name:"Rent",amount:1200,freq:"monthly",day:1},
     {id:uid(),name:"Car insurance",amount:140,freq:"monthly",day:5},
     {id:uid(),name:"Car payment",amount:350,freq:"monthly",day:12},
@@ -663,20 +793,21 @@ $("setup-example").addEventListener("click",()=>{
   syncAccounts(state);
   save(); render();
 });
-$("clear-examples").addEventListener("click",()=>{ const s=state.settings; state=blank(); state.settings={pay:0,anchor:s.anchor,cushion:0}; $("setup-pay").value=""; save(); render(); });
+$("clear-examples").addEventListener("click",()=>{ state=blank(); $("setup-pay").value=""; save(); render(); });
 
 // ---------- nav ----------
 $("prev-period").addEventListener("click",()=>{ view.offset--; renderPeriod(); });
 $("next-period").addEventListener("click",()=>{ view.offset++; renderPeriod(); });
 $("prev-month").addEventListener("click",()=>{ view.calM--; if(view.calM<0){view.calM=11;view.calY--;} renderCalendar(); });
 $("next-month").addEventListener("click",()=>{ view.calM++; if(view.calM>11){view.calM=0;view.calY++;} renderCalendar(); });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeBill(); $("set-scrim").hidden=true; } });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(!$("inc-scrim").hidden){ closeIncome(); return; } closeBill(); $("set-scrim").hidden=true; } });
 
 // ---------- storage: Claude account (db) with on-device fallback ----------
 let docRef=null, mode="local", dirty=false, saving=false, timer=null, synced=false;
 function readLocal(){ try{ const s=localStorage.getItem(LS_KEY); return s?JSON.parse(s):null; }catch(e){ return null; } }
 function writeLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
-function normalize(d){ const b=blank(); if(!d||typeof d!=="object") return b; return syncAccounts({v:1, settings:Object.assign(b.settings,d.settings||{}), accounts:Array.isArray(d.accounts)?d.accounts.map(a=>({name:String(a.name),type:a.type==="card"?"card":"bank"})):null, bills:Array.isArray(d.bills)?d.bills.map(x=>({...x})):[], paid:d.paid&&typeof d.paid==="object"?{...d.paid}:{}, checkins:d.checkins&&typeof d.checkins==="object"?{...d.checkins}:{}, example:!!d.example, imported:!!d.imported}); }
+function normalize(d){ const b=blank(); if(!d||typeof d!=="object") return b; const st=Object.assign(b.settings,d.settings||{}); const incomes=migrateIncomes(d); delete st.pay; delete st.anchor;
+  return syncAccounts({v:2, settings:st, incomes, accounts:Array.isArray(d.accounts)?d.accounts.map(a=>({name:String(a.name),type:a.type==="card"?"card":"bank"})):null, bills:Array.isArray(d.bills)?d.bills.map(x=>({...x})):[], paid:d.paid&&typeof d.paid==="object"?{...d.paid}:{}, checkins:d.checkins&&typeof d.checkins==="object"?{...d.checkins}:{}, example:!!d.example, imported:!!d.imported}); }
 function save(){ writeLocal(); if(docRef){ dirty=true; clearTimeout(timer); timer=setTimeout(flush,500); } renderStatus(); }
 async function flush(){
   if(saving||!docRef) return; saving=true;
